@@ -185,8 +185,6 @@ if __name__ == "__main__":
         --log-path /home/xuanlin/Downloads/opt_results_bridge.txt --robot widowx
     """
 
-    os.environ["DISPLAY"] = ""
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset-path", type=str, default="sysid_log/sysid_dataset.pkl")
     parser.add_argument("--log-path", type=str, default="sysid_log/opt_results_google_robot.txt")

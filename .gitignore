@@ -47,10 +47,11 @@ imgui.ini
 *.tar
 
 .ply
+*.pkl
 
 .whl
 
-./results
+results*
 ./ManiSkill2_real2sim_xuanlin
 SpatialAgent
 
@@ -74,6 +75,7 @@ TorchSDF
 torchprimitivesdf
 
 results
+cv_results
 
 output
 
@@ -85,3 +87,5 @@ output
 
 
 dlimp
+
+*.log

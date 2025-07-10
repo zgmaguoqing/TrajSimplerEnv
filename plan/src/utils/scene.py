@@ -133,6 +133,8 @@ class Scene:
         # self.vis_robot_collision(state)
         result = self.to_pc(state, with_robot_pc=True)
         # Vis.show(Vis.pc_plotly(result['robot_pc']))
+        
+        # import IPython; IPython.embed()
 
 
         # # 将点云转换为 open3d 格式
@@ -176,13 +178,20 @@ class Scene:
         #                 #     obj_pc_in_link = obj_pc_in_link[(obj_pc_in_link[:, i] > box2[0][i]) & (obj_pc_in_link[:, i] < box2[1][i])]
         #                 # Vis.show(Vis.pc_plotly(torch.einsum('ab,nb->na',link_rot_k,obj_pc_in_link)+link_trans_k,color='red',size=5)+self.to_plotly(state))
         if not self.obj_thresh is None:
-                # cdist = cdist(state['pc'], result['robot_pc'])
-                # if torch.min(cdist) < self.obj_thresh:
-                if cdist_test(state['pc'], result['robot_pc'], self.obj_thresh):
-                    return True, 'robot-obj'
+            if "save_pc" in state:
+                import pickle as pkl
+                with open(state["save_pc"], "wb") as f:
+                    pkl.dump((np.array(state['pc']), np.array(result['robot_pc'])), f)
+
+            # import IPython; IPython.embed()
+
+            # cdist = cdist(state['pc'], result['robot_pc'])
+            # if torch.min(cdist) < self.obj_thresh:
+            if cdist_test(state['pc'], result['robot_pc'], self.obj_thresh):
+                return True, 'robot-obj'
                 
         if not self.self_thresh is None:
-             for link_i, link_j in self.adj_list:
+            for link_i, link_j in self.adj_list:
                 # cdist = torch.cdist(link_spheres[link_i]['center'], link_spheres[link_j]['center']) - link_spheres[link_j]['radius'] - link_spheres[link_i]['radius'][:, None]
                 # if torch.min(cdist) < self.self_thresh:
                 if cdist_test(result['link_pc'][link_i], result['link_pc'][link_j], self.self_thresh):

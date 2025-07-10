@@ -253,21 +253,25 @@ def coll(robot_model, mesh_pc, state, table_thresh=0.0025, obj_thresh=0.0025, ro
     return False
 
 def cdist_test(pc1, pc2, thresh, filter=True):
-    if filter:
-        pc1_min, pc1_max = pc1.min(dim=0).values, pc1.max(dim=0).values
-        for i in range(3):
-            pc2 = pc2[(pc2[:, i] > pc1_min[i] - 1.2 * thresh) & (pc2[:, i] < pc1_max[i] + 1.2 * thresh)]
-            if len(pc2) == 0:
-                return False
-        pc2_min, pc2_max = pc2.min(dim=0).values, pc2.max(dim=0).values
-        for i in range(3):
-            pc1 = pc1[(pc1[:, i] > pc2_min[i] - 1.2 * thresh) & (pc1[:, i] < pc2_max[i] + 1.2 * thresh)]
-            if len(pc1) == 0:
-                return False
-    # cdist = torch.cdist(pc1, pc2)
-    # return cdist.min() < thresh
-    if len(pc2) > len(pc1):
-        pc1, pc2 = pc2, pc1
-    tree = cKDTree(pc2)
-    distances, _ = tree.query(pc1, k=1)  # Find the nearest point in pc2 for each point in pc1
-    return np.min(distances) < thresh
+    try:
+        if filter:
+            pc1_min, pc1_max = pc1.min(dim=0).values, pc1.max(dim=0).values
+            for i in range(3):
+                pc2 = pc2[(pc2[:, i] > pc1_min[i] - 1.2 * thresh) & (pc2[:, i] < pc1_max[i] + 1.2 * thresh)]
+                if len(pc2) == 0:
+                    return False
+            pc2_min, pc2_max = pc2.min(dim=0).values, pc2.max(dim=0).values
+            for i in range(3):
+                pc1 = pc1[(pc1[:, i] > pc2_min[i] - 1.2 * thresh) & (pc1[:, i] < pc2_max[i] + 1.2 * thresh)]
+                if len(pc1) == 0:
+                    return False
+        # cdist = torch.cdist(pc1, pc2)
+        # return cdist.min() < thresh
+        if len(pc2) > len(pc1):
+            pc1, pc2 = pc2, pc1
+        tree = cKDTree(pc2)
+        distances, _ = tree.query(pc1, k=1)  # Find the nearest point in pc2 for each point in pc1
+        return np.min(distances) < thresh
+    except IndexError:
+        # print("ignored dim=0 IndexError")
+        return False

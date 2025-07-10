@@ -17,12 +17,10 @@ warnings.filterwarnings("ignore")
 os.makedirs("output", exist_ok=True)
 
 def sofar(image, depth, intrinsic_matrix, extrinsic_matrix, prompt):
-
-    output_folder = "/data/workspace/SimplerEnv/output"
-    
+    output_folder = "output"
     
     image = Image.fromarray(image)
-    image.save("/data/workspace/SimplerEnv/output/img_simpler.png")
+    image.save("output/img_simpler.png")
     fx = intrinsic_matrix[0, 0]
     fy = intrinsic_matrix[1, 1]
     cx = intrinsic_matrix[0, 2]
@@ -41,7 +39,6 @@ def sofar(image, depth, intrinsic_matrix, extrinsic_matrix, prompt):
     detections = detection.get_detections(image, object_list, detection_model, output_folder=output_folder)
     mask, ann_img, object_names = sam.get_mask(
         image, object_list, sam_model, detections, output_folder=output_folder)
-
 
     print("Generate scene graph...")
     orientation_model = get_pointofm_model()

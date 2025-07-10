@@ -118,8 +118,8 @@ def get_grasp_pose(task_description, intrinsic, object_mask, obj_pts_cam, sce_pt
         return gg_group, gg_goal_group
     else:
         return gg_group_list, gg_goal_group_list
-        
-    
+
+
 
 def filter_pc(robot_urdf, sce_pts_base, obs, robot_joints):
     rm = RobotModel(robot_urdf)
@@ -134,7 +134,7 @@ def filter_pc(robot_urdf, sce_pts_base, obs, robot_joints):
     kd_tree = o3d.geometry.KDTreeFlann(state_pc)
     indices_to_remove = []
     for point in robot_pcd.points:
-        [_, idx, _] = kd_tree.search_radius_vector_3d(point, radius=0.05)  
+        [_, idx, _] = kd_tree.search_radius_vector_3d(point, radius=0.05)
         indices_to_remove.extend(idx)
     state_pc = state_pc.select_by_index(indices_to_remove, invert=True)
     scene_pc_filter = torch.tensor(np.asarray(state_pc.points))
@@ -165,11 +165,10 @@ def run_maniskill2_eval_single_episode(
     additional_env_save_tags=None,
     logging_dir="./results",
 ):
-
     if additional_env_build_kwargs is None:
         additional_env_build_kwargs = {}
 
-    
+
     control_mode = "arm_pd_ee_pose_gripper_pd_joint_pos"
     control_mode = "arm_pd_joint_pos_gripper_pd_joint_pos"
 
@@ -184,6 +183,7 @@ def run_maniskill2_eval_single_episode(
         scene_name=scene_name,
         camera_cfgs={"add_segmentation": True},
         rgb_overlay_path=rgb_overlay_path,
+        render_mode="human",
     )
     if enable_raytracing:
         ray_tracing_dict = {"shader_dir": "rt"}
@@ -195,7 +195,7 @@ def run_maniskill2_eval_single_episode(
         **additional_env_build_kwargs,
         **kwargs,
     )
-    
+
     # initialize environment
     env_reset_options = {
         "robot_init_options": {
@@ -216,10 +216,10 @@ def run_maniskill2_eval_single_episode(
             "episode_id": obj_episode_id,
         }
     obs, _ = env.reset(options=env_reset_options)
-    obs, reward, done, truncated, info  = env.step(np.array([-0.01840777,  -0.398835 ,  -0.52242722, -0.00460194,  1.365243  ,
-    0.00153398, 0.037, 0.037]))
+    obs, reward, done, truncated, info = env.step(np.array([-0.01840777,  -0.398835 ,  -0.52242722, -0.00460194,  1.365243  , 0.00153398, 0.037, 0.037]))
+    print("render"); env.render()
     # for long-horizon environments, we check if the current subtask is the final subtask
-    is_final_subtask = env.is_final_subtask() 
+    is_final_subtask = env.is_final_subtask()
     # Obtain language instruction
     if instruction is not None:
         task_description = instruction
@@ -232,7 +232,7 @@ def run_maniskill2_eval_single_episode(
     # Initialize model
     timestep = 0
     success = "failure"
-    
+
     print('Task Start')
     images = []
     for _ in range(3):
@@ -248,10 +248,11 @@ def run_maniskill2_eval_single_episode(
     if new_task_description != task_description:
         task_description = new_task_description
         print(task_description)
-        
+
     is_final_subtask = env.is_final_subtask()
     timestep += 1
-    _, _, _, _, info = env.step(np.zeros(8))    
+    _, _, _, _, info = env.step(np.zeros(8))
+    print("render"); env.render()
     episode_stats = info.get("episode_stats", {})
     # save video
     env_save_name = env_name
@@ -335,25 +336,26 @@ def maniskill2_evaluator_sofar_widowx(model, args):
 
 
 def sofar_execution(images, env, obs, obs_camera_name, task_description, additional_env_build_kwargs, env_reset_options):
-    
     image = get_image_from_maniskill2_obs_dict(env, obs, camera_name=obs_camera_name)
     images.append(image)
-    
+
     depth = get_depth_from_maniskill2_obs_dict(env, obs, camera_name=obs_camera_name)
-    intrinsic, extrinsics = get_camera_extrinsics_from_maniskill2_obs_dict(env,
-    obs, camera_name = obs_camera_name)
+    intrinsic, extrinsics = get_camera_extrinsics_from_maniskill2_obs_dict(env, obs, camera_name=obs_camera_name)
+
     base_pose = get_base_pose(obs)
-    graspness_threshold = 0.01
     extrinsics = np.linalg.inv(np.array(extrinsics) @ np.array(base_pose))
+
     sce_pts_cam, sce_pts_base, obj_pts_cam, obj_pts_base, object_mask, relative_translation_table, relative_rotation_table = sofar(image, depth, intrinsic, extrinsics, task_description)
     # np.save(os.path.join("/data/workspace/pointsofar/ReKep", f"picked_obj.npy"), sce_pts_base)
     # Image.fromarray(image).save(os.path.join("/data/workspace/pointsofar/ReKep", f"image.png"))
     # Image.fromarray(object_mask).save(os.path.join("/data/workspace/pointsofar/ReKep", f"mask.png"))
     # Image.fromarray(depth).save(os.path.join("/data/workspace/pointsofar/ReKep", f"depth.png"))
     # exit(0)
+
+    graspness_threshold = 0.01
     gg_group, gg_goal_group = get_grasp_pose(task_description, intrinsic, object_mask, obj_pts_cam, sce_pts_cam, sce_pts_base, extrinsics, relative_translation_table, relative_rotation_table, graspness_threshold)
-    
-    init = np.array(obs['agent']['qpos'][:6]) 
+
+    init = np.array(obs['agent']['qpos'][:6])
     robot_urdf = ARM_URDF_FULL_WIDOWX
     robot_joints = ROBOT_JOINTS_WIDOWX
     vis = Vis(robot_urdf)
@@ -361,19 +363,21 @@ def sofar_execution(images, env, obs, obs_camera_name, task_description, additio
     scene_pc_filter = filter_pc(robot_urdf, sce_pts_base, obs, robot_joints)
     cfg = config.DotDict(
         urdf=robot_urdf,
-        pc = torch.tensor(obj_pts_base),
+        pc=torch.tensor(obj_pts_base),
         curobo_file = "./plan/robot_models/widowx/curobo/widowx.yml",
         robot_type = 'widowx',
     )
-    
+
     if gg_group is None:
         return images, env, obs, None, None
-    
+
+    import IPython; IPython.embed()
+
     for i in range(len(gg_group)):
     # get the grasp pose and pose pose
-        gg = gg_group[i]  
-        if gg.translation[0] < 0.2:        
-            continue 
+        gg = gg_group[i]
+        if gg.translation[0] < 0.2:
+            continue
         if "pick" in task_description:
             # Define the rotation angle in degrees and convert to radians
             if 'lr_switch' in additional_env_build_kwargs.keys():
@@ -387,41 +391,36 @@ def sofar_execution(images, env, obs, obs_camera_name, task_description, additio
                         [0, 1, 0],
                         [-np.sin(angle_rad), 0, np.cos(angle_rad)]
                     ])
-                    gg.rotation_matrix = rotation_matrix @ gg.rotation_matrix    
+                    gg.rotation_matrix = rotation_matrix @ gg.rotation_matrix
             gg_goal = deepcopy(gg)
-            gg_goal.translation[0] -=0.05
+            gg_goal.translation[0] -= 0.05
             gg_goal.translation[2] += 0.05
         else:
             gg_goal = gg_goal_group[i]
 
-        print("\nStar Planning First Phase")
+        print("Star Planning First Phase")
         # visualization
         # visuallize_list = GraspGroup()
         # visuallize_list.add(gg)
         # visuallize_list.add(gg_goal)
-        # visualize_plotly(sce_pts_base, 200 ,visuallize_list, extrinsics, gg_glob=True)
-        
-        
+        # visualize_plotly(sce_pts_base, 200, visuallize_list, extrinsics, gg_glob=True)
+
         robot_state = np.array(obs['agent']['qpos'])
         goal = mat2quat(gg.rotation_matrix)
         goal = np.concatenate([gg.translation, goal])
+
         ik = IK(robot='widowx')
         goal = ik.ik(gg.translation, gg.rotation_matrix, joints=ik.robot_to_arm_joints(init))
         for _ in range(3):
-            goal =  ik.ik(gg.translation, gg.rotation_matrix, joints=ik.robot_to_arm_joints(init))
+            goal = ik.ik(gg.translation, gg.rotation_matrix, joints=ik.robot_to_arm_joints(init))
             if goal is not None:
                 break
         if goal is None:
             print("Grasp Path IK No Solution")
-            continue    
+            continue
         print("Grasp Path IK Solved")
-        
-        
-        
-        
-        
-        
-        print('\n Mid IK Starting')
+
+        print('Mid IK Starting')
         mid1_init_qpos = goal
         for _ in range(3):
             mid1_point = ik.ik(gg.translation+[0, 0, 0.15], gg.rotation_matrix,  joints=ik.robot_to_arm_joints(init))
@@ -429,9 +428,7 @@ def sofar_execution(images, env, obs, obs_camera_name, task_description, additio
                 break
         if mid1_point is None:
             print("Mid Path IK No Solution")
-            continue    
-        
-        
+            continue
 
         for _ in range(3):
             mid2_point = ik.ik(gg_goal.translation+[0, 0, 0.15], gg_goal.rotation_matrix,  joints=ik.robot_to_arm_joints(init))
@@ -439,9 +436,9 @@ def sofar_execution(images, env, obs, obs_camera_name, task_description, additio
                 break
         if mid2_point is None:
             print("Mid Path IK No Solution")
-            continue  
+            continue
 
-        print('\nPlace IK Starting')
+        print('Place IK Starting')
         place_init_qpos = goal
         for _ in range(3):
             place_goal_qpos = ik.ik(gg_goal.translation+[0, 0, 0.04], gg_goal.rotation_matrix, joints=ik.robot_to_arm_joints(init))
@@ -451,51 +448,50 @@ def sofar_execution(images, env, obs, obs_camera_name, task_description, additio
             print("Place Path IK No Solution")
             continue
         print("Place Path IK Solved")
-        
+
+
+
         for _ in range(2):
             planner = Planner(cfg, planner='AITstar', fix_joints=['left_finger', 'right_finger'])
-            res_grasp, grasp_path = planner.plan(robot_state[:6], goal, interpolate_num=30, 
+            res_grasp, grasp_path = planner.plan(robot_state[:6], goal, interpolate_num=30,
                                                 fix_joints_value={'left_finger': 0.037, 'right_finger': 0.037})
-            if res_grasp : 
-                print('\nGrasp Path Completed')
+            if res_grasp :
+                print('Grasp Path Completed')
                 break
         if grasp_path is None or res_grasp == False:
             continue
-        
+
         for _ in range(2):
             planner = Planner(cfg, planner='AITstar', fix_joints=['left_finger', 'right_finger'])
             res_mid1, mid_path1 = planner.plan(mid1_init_qpos[:6], mid1_point[:6], interpolate_num=30, fix_joints_value={'left_finger': 0.037, 'right_finger': 0.037})
-            if res_mid1: 
-                print('\nMid1 Path Completed')
+            if res_mid1:
+                print('Mid1 Path Completed')
                 break
-        if mid_path1 is None or res_mid1==False: 
-            continue    
-        
-        
-        
-        
+        if mid_path1 is None or res_mid1==False:
+            continue
+
         for _ in range(2):
             planner = Planner(cfg, planner='AITstar', fix_joints=['left_finger', 'right_finger'])
             res_mid2, mid_path2 = planner.plan(mid1_point[:6], mid2_point[:6], interpolate_num=30, fix_joints_value={'left_finger': 0.037, 'right_finger': 0.037})
-            if res_mid2: 
-                print('\nMid1 Path Completed')
+            if res_mid2:
+                print('Mid2 Path Completed')
                 break
         if mid_path2 is None or res_mid2==False: #or not isinstance(place_path, np.ndarray)
-            continue    
-        
+            continue
+
         for _ in range(2):
             planner = Planner(cfg, planner='AITstar', fix_joints=['left_finger', 'right_finger'])
             res_place, place_path = planner.plan(mid2_point[:6], place_goal_qpos[:6], interpolate_num=30, fix_joints_value={'left_finger': 0.037, 'right_finger': 0.037})
             if res_place:
-                print('\nPlace Path Completed')
+                print('Place Path Completed')
                 break
         if place_path is None or res_place == False: # or not isinstance(place_path, np.ndarray)
             continue
         else:
             break
-    try:
-        if isinstance(grasp_path, np.ndarray):    
 
+    try:
+        if isinstance(grasp_path, np.ndarray):
             num_copies = 5
             repeated_elements = np.tile(grasp_path[-1], (num_copies, 1))
             for index in range(num_copies):
@@ -503,41 +499,54 @@ def sofar_execution(images, env, obs, obs_camera_name, task_description, additio
             grasp_path = np.vstack([grasp_path, repeated_elements])
 
             for index in range(len(grasp_path)):
-                obs, reward, done, truncated, info = env.step(grasp_path[index])   
+                obs, reward, done, truncated, info = env.step(grasp_path[index])
+                print("render grasp"); env.render()
                 img = get_image_from_maniskill2_obs_dict(env, obs, camera_name=obs_camera_name)
                 images.append(img)
                 
+            import IPython; IPython.embed()
+
             mid_path1[:, -2:] = [0.010, 0.010]
             for index in range(len(mid_path1)):
-                obs, reward, done, truncated, info = env.step(mid_path1[index])   
+                obs, reward, done, truncated, info = env.step(mid_path1[index])
+                print("render path1"); env.render()
                 img = get_image_from_maniskill2_obs_dict(env, obs, camera_name=obs_camera_name)
-                images.append(img)      
+                images.append(img)
                 
-                
+            import IPython; IPython.embed()
+
             mid_path2[:, -2:] = [0.010, 0.010]
             for index in range(len(mid_path2)):
-                obs, reward, done, truncated, info = env.step(mid_path2[index])   
+                obs, reward, done, truncated, info = env.step(mid_path2[index])
+                print("render path2"); env.render()
                 img = get_image_from_maniskill2_obs_dict(env, obs, camera_name=obs_camera_name)
-                images.append(img)       
-                   
+                images.append(img)
+                
+            import IPython; IPython.embed()
         else:
             return images, env, obs, None, None
     except:
         return images, env, obs, None, None
+
     try:
-        if isinstance(place_path, np.ndarray):   
+        if isinstance(place_path, np.ndarray):
             place_path[:, -2:] = [0.010, 0.010]
             num_copies = 5
             repeated_elements = np.tile(place_path[-1], (num_copies, 1))
             for index in range(num_copies):
                 repeated_elements[index, -2:] = [0.015+index/num_copies*0.022, 0.015+index/num_copies*0.022]
             place_path = np.vstack([place_path, repeated_elements])
+
             for index in range(len(place_path)):
                 obs, reward, done, truncated, info = env.step(place_path[index])
+                print("render place"); env.render()
                 img = get_image_from_maniskill2_obs_dict(env, obs, camera_name=obs_camera_name)
                 images.append(img)
+                
+            import IPython; IPython.embed()
         else:
             return images, env, obs, None, None
     except:
         return images, env, obs, None, None
+
     return images, env, obs, done, info

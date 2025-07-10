@@ -76,14 +76,22 @@ class PbOMPL():
         # self.collision_fn = pb_utils.get_collision_fn(self.robot_id, self.robot.joint_idx, self.obstacles, [], True, set(),
         #                                                 custom_limits={}, max_distance=0, allow_collision_links=[])
 
-    def is_state_valid(self, state):
+    def is_state_valid(self, state, save_pc=None):
         # satisfy bounds TODO
         # Should be unecessary if joint bounds is properly set
 
         # check self-collision
         qpos = self.add_fix_joints(self.state_to_list(state))
         scene = dict(qpos=np.array(qpos), pc=self.config['pc'])
-        return not self.scene.check_coll(scene)[0]
+        if save_pc is not None:
+            scene["save_pc"] = save_pc
+        # print(scene["qpos"])
+        # exit()
+        
+        coll_result = self.scene.check_coll(scene)
+        # if coll_result[0]:
+        #     print(coll_result[1])
+        return not coll_result[0]
         # for link1, link2 in self.check_link_pairs:
         #     if utils.pairwise_link_collision(self.cid, self.robot_id, link1, self.robot_id, link2):
         #         # print(get_body_name(body), get_link_name(body, link1), get_link_name(body, link2))

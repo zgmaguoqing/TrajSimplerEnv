@@ -132,7 +132,6 @@ def main(
 
 
 if __name__ == "__main__":
-    os.environ["DISPLAY"] = ""
     os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
     gpus = tf.config.list_physical_devices("GPU")
     if len(gpus) > 0:

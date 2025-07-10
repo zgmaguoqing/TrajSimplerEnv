@@ -93,6 +93,7 @@ class IK:
                                             initial_position=self.pad_joints(joints).tolist())
         except Exception as e:
             if allow_fail:
+                print(e)
                 return joints
             else:
                 raise e
@@ -100,12 +101,12 @@ class IK:
         fk2 = self.arm.forward_kinematics(ik)
         ik_arm = self.unpad_joints(ik)
         if not ((np.diag(fk2[:3, :3]@rot.T).sum()-1)/2 > 0.99 and np.linalg.norm(fk2[:3, 3] - trans) < 0.005):
+            print(f'unreachable trans {trans}, rot {rot}')
             if allow_fail:
                 return ik_arm
-            if not silent:
-                print(f'unreachable trans {trans}, rot {rot}')
+            else:
                 return None
-            # raise ValueError
+                # raise ValueError
         
         return ik_arm
     

@@ -12,11 +12,11 @@ from simpler_env.utils.metrics import (
     pearson_correlation,
     print_all_kruskal_results,
 )
-import debugpy
-import debugpy
-debugpy.listen(('0.0.0.0', 5681))
-print('Waiting for debugger attach')
-debugpy.wait_for_client()
+# import debugpy
+# import debugpy
+# debugpy.listen(('0.0.0.0', 5681))
+# print('Waiting for debugger attach')
+# debugpy.wait_for_client()
 # Calculate metrics for each task
 
 
@@ -109,7 +109,7 @@ def calc_pick_coke_can_stats(root_result_dir):
                 base_variants + background_variants + lighting_variants + distractor_variants + table_texture_variants
             ):
                 variant = variant.format(coke_can_orientation_map_dict[coke_can_orientation])
-                variant = f"{root_result_dir}/{CKPT_MAPPING[ckpt_alias]}/{variant}"
+                variant = f"{root_result_dir}/motion_planning/{variant}"
                 avg_sim_success = np.mean(
                     get_dir_stats(
                         variant,
@@ -181,7 +181,7 @@ def calc_pick_coke_can_stats(root_result_dir):
         for ckpt_alias in ckpt_alias_keys:
             for variant in base_visual_matching_variants:
                 variant = variant.format(coke_can_orientation_map_dict[coke_can_orientation])
-                variant = f"{root_result_dir}/{CKPT_MAPPING[ckpt_alias]}/{variant}"
+                variant = f"{root_result_dir}/motion_planning/{variant}"
                 avg_sim_success = np.mean(
                     get_dir_stats(
                         variant,
@@ -334,7 +334,7 @@ def calc_move_near_stats(root_result_dir):
         for variant in (
             base_variants + background_variants + lighting_variants + distractor_variants + table_texture_variants
         ):
-            variant = f"{root_result_dir}/{CKPT_MAPPING[ckpt_alias]}/{variant}"
+            variant = f"{root_result_dir}/motion_planning/{variant}"
             avg_sim_success = np.mean(get_dir_stats(variant, extra_pattern_require=extra_pattern_require_sim_variants))
             if np.isnan(avg_sim_success):
                 print(f"WARNING: avg_sim_success is nan for {variant}")
@@ -364,7 +364,7 @@ def calc_move_near_stats(root_result_dir):
     move_near_sim_visual_matching_success = {k: [] for k in ckpt_alias_keys}
     for ckpt_alias in ckpt_alias_keys:
         for variant in base_visual_matching_variants:
-            variant = f"{root_result_dir}/{CKPT_MAPPING[ckpt_alias]}/{variant}"
+            variant = f"{root_result_dir}/motion_planning/{variant}"
             avg_sim_success = np.mean(
                 get_dir_stats(variant, extra_pattern_require=extra_pattern_require_visual_matching)
             )
@@ -484,7 +484,7 @@ def calc_drawer_stats(root_result_dir):
             for specific_task in drawer_task_map_dict[drawer_task]:
                 for variant in base_variants + background_variants + lighting_variants + table_texture_variants:
                     variant = variant.format(specific_task)
-                    variant = f"{root_result_dir}/{CKPT_MAPPING[ckpt_alias]}/{variant}"
+                    variant = f"{root_result_dir}/motion_planning/{variant}"
                     avg_sim_success = np.mean(
                         get_dir_stats(
                             variant,
@@ -549,7 +549,7 @@ def calc_drawer_stats(root_result_dir):
             for specific_task in drawer_task_map_dict[drawer_task]:
                 for variant in base_visual_matching_variants:
                     variant = variant.format(specific_task)
-                    variant = f"{root_result_dir}/{CKPT_MAPPING[ckpt_alias]}/{variant}"
+                    variant = f"{root_result_dir}/motion_planning/{variant}"
                     avg_sim_success = np.mean(
                         get_dir_stats(
                             variant,
@@ -700,7 +700,7 @@ def calc_long_horizon_apple_in_drawer_stats(root_result_dir):
             for specific_task in drawer_task_map_dict[drawer_task]:
                 for variant in base_variants + background_variants + lighting_variants + table_texture_variants:
                     variant = variant.format(specific_task) + f"_{extra_log_str_variant_agg}"
-                    variant = f"{root_result_dir}/{CKPT_MAPPING[ckpt_alias]}/{variant}"
+                    variant = f"{root_result_dir}/motion_planning/{variant}"
                     avg_sim_success = np.mean(
                         get_dir_stats(
                             variant,
@@ -765,7 +765,7 @@ def calc_long_horizon_apple_in_drawer_stats(root_result_dir):
             for specific_task in drawer_task_map_dict[drawer_task]:
                 for variant in base_visual_matching_variants:
                     variant = variant.format(specific_task) + f"_{extra_log_str_visual_matching}"
-                    variant = f"{root_result_dir}/{CKPT_MAPPING[ckpt_alias]}/{variant}"
+                    variant = f"{root_result_dir}/motion_planning/{variant}"
                     avg_sim_success = np.mean(
                         get_dir_stats(
                             variant,
@@ -912,16 +912,16 @@ def calc_bridge_put_on_env_stats(root_result_dir):
     # hardcoded; if you have new variants, please update here
     base_visual_matching_variants_dict = {
         "put_spoon_on_tablecloth": [
-            "bridge_table_1_v1/arm_pd_ee_target_delta_pose_align2_gripper_pd_joint_pos/PutSpoonOnTableClothInScene-v0",
+            "bridge_table_1_v1/arm_pd_joint_pos_gripper_pd_joint_pos/PutSpoonOnTableClothInScene-v0",
         ],
         "put_carrot_on_plate": [
-            "bridge_table_1_v1/arm_pd_ee_target_delta_pose_align2_gripper_pd_joint_pos/PutCarrotOnPlateInScene-v0",
+            "bridge_table_1_v1/arm_pd_joint_pos_gripper_pd_joint_pos/PutCarrotOnPlateInScene-v0",
         ],
         "stack_green_block_on_yellow_block": [
-            "bridge_table_1_v1/arm_pd_ee_target_delta_pose_align2_gripper_pd_joint_pos/StackGreenCubeOnYellowCubeBakedTexInScene-v0",
+            "bridge_table_1_v1/arm_pd_joint_pos_gripper_pd_joint_pos/StackGreenCubeOnYellowCubeBakedTexInScene-v0",
         ],
         "put_eggplant_in_basket": [
-            "bridge_table_1_v2/arm_pd_ee_target_delta_pose_align2_gripper_pd_joint_pos/PutEggplantInBasketScene-v0",
+            "bridge_table_1_v2/arm_pd_joint_pos_gripper_pd_joint_pos/PutEggplantInBasketScene-v0",
         ],
     }
 
@@ -948,7 +948,7 @@ def calc_bridge_put_on_env_stats(root_result_dir):
                     tmp.extend([f"{variant}_octo_init_rng_{seed}" for variant in base_visual_matching_variants])
                 base_visual_matching_variants = tmp
             for variant in base_visual_matching_variants:
-                variant = f"{root_result_dir}/{CKPT_MAPPING[ckpt_alias]}/{variant}"
+                variant = f"{root_result_dir}/motion_planning/{variant}"
                 avg_sim_success = np.mean(
                     get_dir_stats(
                         variant,
@@ -1029,7 +1029,7 @@ CKPT_MAPPING = {
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--task", type=str, default="pick_coke_can", help="task name")
-parser.add_argument("--log-dir-root", type=str, default="/data/workspace/SimplerEnv/results", help="log directory")
+parser.add_argument("--log-dir-root", type=str, default="results", help="log directory")
 
 args = parser.parse_args()
 
