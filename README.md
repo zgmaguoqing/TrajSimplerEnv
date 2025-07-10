@@ -1,96 +1,105 @@
-# SimplerEnv-SOFAR: The [SoFar](https://arxiv.org/pdf/2502.13143) manipulation evaluation for Simpler_Env. 
+# FSD Evaluation on SimplerEnv
 
+<div align="center">
 
-We present SoFar, the first 6-DoF system for spatial reasoning and robotic manipulation.
+**From Seeing to Doing: Bridging Reasoning and Decision for Robotic Manipulation**
 
-We introduce the concept of semantic orientation, representing the object orientation condition on open vocabulary language.
+[[🌐 Website](https://embodied-fsd.github.io)] [[📄 Paper](https://arxiv.org/pdf/2505.08548)] [[🤗 Models](https://huggingface.co/collections/IffYuan/fsd-683fa0d552e70f302fd04b34)] [[🎯 Datasets](https://huggingface.co/collections/IffYuan/fsd-683fa0d552e70f302fd04b34)] [[💬 Demo](#demo)]
 
-[Zekun Qi](https://qizekun.github.io/) *, [Wenyao Zhang]() *, [Yufei Ding](https://selina2023.github.io/) *, [Runpei Dong](https://runpeidong.web.illinois.edu/), [Xinqiang Yu](), [Jingwen Li](), [Lingyun Xu](), [Baoyu Li](https://baoyuli.github.io/), [Xialin He](https://xialin-he.github.io/), [Guofan Fan](https://github.com/Asterisci/), [Jiazhao Zhang](https://jzhzhang.github.io/), [Jiawei He](https://jiaweihe.com/), [Jiayuan Gu](https://jiayuan-gu.github.io/), [Xin Jin](http://home.ustc.edu.cn/~jinxustc/), [Kaisheng Ma](http://group.iiis.tsinghua.edu.cn/~maks/leader.html), [Zhizheng Zhang](https://scholar.google.com/citations?user=X7M0I8kAAAAJ&hl=en), [He Wang](https://hughw19.github.io/) and [Li Yi](https://ericyi.github.io/).
-
-[![Project Page](https://img.shields.io/badge/Project-Page-Green.svg)](https://qizekun.github.io/sofar/)
-[![Paper PDF](https://img.shields.io/badge/Paper-PDF-orange.svg)](https://arxiv.org/abs/2502.13143)
-[![Hugging Face](https://img.shields.io/badge/🤗-Hugging_Face-yellow.svg)](https://huggingface.co/collections/qizekun/sofar-67b511129d3146d28cea9920)
-[![Code License](https://img.shields.io/badge/Code%20License-Apache_2.0-green.svg)](https://github.com/tatsu-lab/stanford_alpaca/blob/main/LICENSE)
-[![Data License](https://img.shields.io/badge/Data%20License-CC%20By%20NC%204.0-red.svg)](https://github.com/tatsu-lab/stanford_alpaca/blob/main/DATA_LICENSE)
-
-<div style="text-align: center;">
-    <img src="assets/teaser.jpg" width=100% >
 </div>
 
-## Installation
+---
 
-**Create an anaconda environment:**
+This repository is used to evaluate the FSD performance on bridge tasks of [SimplerEnv](https://github.com/simpler-env/SimplerEnv). 
 
-```
-conda create -n simpler_env python=3.10 (any version above 3.10 should be fine)
-conda activate simpler_env
-```
+
+## 💿 Installation
 
 **Clone this repo:**
 
-```
-git clone https://github.com/Zhangwenyao1/SimplerEnv-SOFAR
+```bash
+git clone --recurse-submodules https://github.com/hilookas/SimplerEnv -b fsd
+cd SimplerEnv
 ```
 
-This repository's code is based in the [SimplerEnv](https://github.com/simpler-env/SimplerEnv) and the ManiSkill2 based [ManiSkill2](https://github.com/Jiayuan-Gu/ManiSkill2_real2sim) from [JiayuanGU](https://github.com/Jiayuan-Gu) for the Open-Loop control.
+**Create an anaconda environment:**
+
+```bash
+conda create -n simpler_env python=3.10
+conda activate simpler_env
+```
 
 **Install SimplerEnv:**
 
-see [SimplerEnv](https://github.com/simpler-env/SimplerEnv) for installation instructions.
+```bash
+# Following the instructions <https://github.com/simpler-env/SimplerEnv#installation>
 
-**Install GSNET:**
+pip install numpy==1.24.4
 
-see [`GSNET/READNE.md`]
+pushd ManiSkill2_real2sim
+pip install -e .
+popd
 
-This code is based on [graspnet-baseline](https://github.com/graspnet/graspnet-baseline), you can use the code to predict the grasp.
-
-**Install Motion Planning Moduel:**
-
-see [`./plan/README.md`]
-
-You need modify the checkpoint or config  path  in following files in plan:
-
-> plan/src/utils/constants.py
-
-The motion planning module code is based in the [ompl](https://github.com/lyfkyle/pybullet_ompl).
-
-**Install SoFar:**
-
-see [SoFar](https://github.com/qizekun/SoFar) for installation instructions.
-
-**Notion:**
-
-You have to install GroundingDINO for the evaluation.
-
-You need modify the checkpoint or config  path  in following files in SoFar:
-
-> SoFar/depth/metric3dv2.py
->
-> SoFar/segmentation/grounding_dino.py
->
-> SoFar/segmentation/sam.py
->
-> SoFar/serve/pointso.py
-
-## Execution
-
-You can run the evaluation in the script folder for different tasks:
-
-> sh scripts/sofar_bridge.sh
-
-## Acknowledgement
-
-We would like to express our deepest gratitude to [haoran liu](https://github.com/lhrrhl0419) for the planning module and experiments !!!
-
-## Citation
-
-If you find our ideas / environments helpful, please cite our work at
-
+pip install -e .
 ```
-@article{qi2025sofar,
-  author = {Qi, Zekun and Zhang, Wenyao and Ding, Yufei and Dong, Runpei and Yu, Xinqiang and Li, Jingwen and Xu, Lingyun and Li, Baoyu and He, Xialin and Fan, Guofan and Zhang, Jiazhao and He, Jiawei and Gu, Jiayuan and Jin, Xin and Ma, Kaisheng and Zhang, Zhizheng and Wang, He and Yi, Li},
-  title = {SoFar: Language-Grounded Orientation Bridges Spatial Reasoning and Object Manipulation},
-  journal = {arXiv preprint arXiv:2502.13143},
-  year = {2025}
+
+**Install GraspNet:**
+
+```bash
+# Following the instructions in GSNet/README.md
+
+conda install openblas-devel -c anaconda
+pushd MinkowskiEngine
+python setup.py install --blas_include_dirs=${CONDA_PREFIX}/include --blas=openblas
+popd
+
+pushd GSNet
+
+pushd pointnet2
+python setup.py install
+popd
+
+pushd knn
+python setup.py install
+popd
+
+popd
+
+pushd graspnetAPI
+pip install .
+popd
+```
+
+## 🏃 Execution
+
+You can run the evaluation using:
+
+```bash
+bash scripts/fsd_bridge.sh
+```
+
+## 🙏 Acknowledgments
+
+We sincerely thank the following open-source projects and research works:
+
+- [SimplerEnv-SOFAR](https://github.com/Zhangwenyao1/SimplerEnv-SOFAR)
+- [ManiSkill2_real2sim](https://github.com/simpler-env/ManiSkill2_real2sim)
+- [graspnetAPI](https://github.com/graspnet/graspnetAPI)
+- [graspness_unofficial](https://github.com/graspnet/graspness_unofficial) / [graspnet-baseline](https://github.com/graspnet/graspnet-baseline)
+- [MinkowskiEngine](https://github.com/NVIDIA/MinkowskiEngine)
+- [pytorch3d](https://github.com/facebookresearch/pytorch3d)
+
+## 📚 Citation
+
+If you use FSD in your research, please cite our paper:
+```
+@misc{yuan2025seeingdoingbridgingreasoning,
+      title={From Seeing to Doing: Bridging Reasoning and Decision for Robotic Manipulation}, 
+      author={Yifu Yuan and Haiqin Cui and Yibin Chen and Zibin Dong and Fei Ni and Longxin Kou and Jinyi Liu and Pengyi Li and Yan Zheng and Jianye Hao},
+      year={2025},
+      eprint={2505.08548},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO},
+      url={https://arxiv.org/abs/2505.08548}, 
 }
 ```
