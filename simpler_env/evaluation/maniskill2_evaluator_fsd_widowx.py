@@ -353,7 +353,22 @@ class Grasp:
     translation: np.ndarray
     rotation_matrix: np.ndarray
 
-def fsd_execution(images, env, obs, obs_camera_name, task_description, additional_env_build_kwargs, env_reset_options):
+def fsd_execution(images, env, obs, obs_camera_name, task_description, additional_env_build_kwargs, env_reset_options, 
+                  pick_goal_uvd=None, place_goal_uvd=None):
+    """
+    执行 FSD 轨迹
+    
+    Args:
+        images: 图像列表
+        env: 环境对象
+        obs: 当前观察
+        obs_camera_name: 相机名称
+        task_description: 任务描述
+        additional_env_build_kwargs: 额外的环境构建参数
+        env_reset_options: 环境重置选项
+        pick_goal_uvd: 可选的用户指定的 pick 点 (u, v, d)，如果为 None 则使用 VLM 自动选择
+        place_goal_uvd: 可选的用户指定的 place 点 (u, v, d)，如果为 None 则使用 VLM 自动选择
+    """
     image = get_image_from_maniskill2_obs_dict(env, obs, camera_name=obs_camera_name)
     images.append(image)
 
@@ -366,7 +381,14 @@ def fsd_execution(images, env, obs, obs_camera_name, task_description, additiona
     # with open("extrinsics.pkl", "wb") as f:
     #     pkl.dump(extrinsics, f)
 
-    pick_goal_uvd, place_goal_uvd = get_uvd(image, depth, task_description)
+    # 如果用户提供了 pick 和 place 点，使用用户指定的点；否则使用 VLM 自动选择
+    if pick_goal_uvd is None or place_goal_uvd is None:
+        print("使用 VLM 自动选择 pick 和 place 点...")
+        pick_goal_uvd, place_goal_uvd = get_uvd(image, depth, task_description)
+    else:
+        print(f"使用用户指定的点:")
+        print(f"  Pick 点: ({pick_goal_uvd[0]}, {pick_goal_uvd[1]}, {pick_goal_uvd[2]:.4f})")
+        print(f"  Place 点: ({place_goal_uvd[0]}, {place_goal_uvd[1]}, {place_goal_uvd[2]:.4f})")
     pick_goal_xyz = get_xyz_from_uvd(*pick_goal_uvd, intrinsic_matrix=intrinsic)
     place_goal_xyz = get_xyz_from_uvd(*place_goal_uvd, intrinsic_matrix=intrinsic)
     
@@ -382,7 +404,7 @@ def fsd_execution(images, env, obs, obs_camera_name, task_description, additiona
 
     gsnet = GSNet()
     gg = gsnet.inference(pcd_camera)
-    # gsnet.visualize(pcd_camera[::1000,:], gg, save_image="grasp.png")
+    gsnet.visualize(pcd_camera[::1000,:], gg, save_image="/workspace/results/grasp.png", save_pc="/workspace/results/grasp.ply", display=False)
 
     # with open("pcd_camera.pkl", "wb") as f:
     #     pkl.dump(pcd_camera, f)
@@ -464,7 +486,7 @@ def fsd_execution(images, env, obs, obs_camera_name, task_description, additiona
                 pick_point = None
                 pick_goal_T = pick_goal_T @ [
                     [1, 0, 0, -0.005 * pick_goal_backoff],
-                    [0, 1, 0, 0],
+                    [0, 1, 0, 0.005 * pick_goal_backoff],  # 向左移动
                     [0, 0, 1, 0],
                     [0, 0, 0, 1],
                 ]

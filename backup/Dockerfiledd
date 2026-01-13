@@ -1,0 +1,194 @@
+# 使用 NVIDIA CUDA 基础镜像
+FROM nvidia/cuda:12.8.0-cudnn-devel-ubuntu22.04
+
+# 设置环境变量
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# 18889
+ENV http_proxy="http://10.5.20.132:18889" 
+ENV https_proxy="http://10.5.20.132:18889"
+
+# 同时保留大写版本以实现最佳兼容性
+ENV HTTP_PROXY="http://10.5.20.132:18889"
+ENV HTTPS_PROXY="http://10.5.20.132:18889"
+
+# 安装 GSNet 的子模块
+# 安装 pointnet2
+# 设置 CUDA 架构列表以支持多种 GPU（从 Turing 到 Hopper）
+# sm_75: Turing (RTX 20xx), sm_80: Ampere (A100, RTX 30xx), sm_86: Ampere mobile, sm_89: Ada (RTX 40xx), sm_90: Hopper (H100)
+ENV TORCH_CUDA_ARCH_LIST="7.5;8.0;8.6;8.9;9.0"
+
+
+
+
+# 安装系统依赖
+RUN apt-get update
+
+RUN apt-get install -y \
+    git \
+    curl \
+    build-essential \
+    libopenblas-dev \
+    python3.10 \
+    python3.10-dev \
+    python3-pip 
+
+RUN apt-get install -y \
+    libvulkan1 \
+    vulkan-tools
+
+# 安装系统依赖（X11、OpenGL 和 Vulkan 相关）
+RUN apt-get install -y \
+    # X11 显示相关依赖
+    libgl1-mesa-glx \
+    libgl1-mesa-dri \
+    libglx-mesa0 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    # OpenCV 需要的 OpenGL 库
+    libglu1-mesa \
+    libgl1 \
+    # 其他显示相关库
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcb-xinerama0 \
+    libxcb-render0 \
+    libxcb-render-util0 \
+    # 确保 OpenGL 库可用
+    libgl-dev \
+    libglu1-mesa-dev 
+
+RUN apt-get install -y \
+    x11-apps 
+
+RUN apt-get install -y \
+    python3-tk 
+
+RUN apt-get install -y \
+    mesa-vulkan-drivers \
+    vulkan-validationlayers
+
+RUN apt-get install -y \
+    libegl1-mesa \
+    libgles2-mesa
+    
+RUN apt-get install -y  mesa-utils \
+    libgl1-mesa-dri \
+    libgl1-mesa-glx
+
+RUN apt-get install -y \
+    ffmpeg
+
+
+
+
+
+
+# 安装 uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:/root/.local/bin:${PATH}"
+
+# 设置工作目录
+WORKDIR /workspace
+
+# 使用 uv 创建虚拟环境（使用系统的 Python 3.10）
+RUN uv venv --python python3.10 /opt/venv
+ENV PATH="/opt/venv/bin:${PATH}"
+
+# 安装 numpy==1.24.4（SimplerEnv 的要求）
+RUN uv pip install numpy==1.24.4
+
+
+# 安装 PyTorch（MinkowskiEngine 需要）
+# 安装与 CUDA 12.8 兼容的 PyTorch 版本
+# 使用 nightly 版本的 cu128 索引以完全匹配 CUDA 12.8
+# 如果需要稳定版本，可以使用 cu124（CUDA 12.4，向后兼容 CUDA 12.8）
+# 增加超时时间以应对大文件下载（PyTorch 及其依赖包很大）
+ENV UV_HTTP_TIMEOUT=6000
+# RUN uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+RUN uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+RUN uv pip install setuptools
+
+# 安装其他必要的 Python 包
+RUN uv pip install pytransform3d opencv-python
+
+# 升级 transforms3d 以修复 np.float 兼容性问题
+RUN uv pip install mediapy rich transforms3d --upgrade
+
+RUN uv pip install ompl urdf_parser_py
+
+# Install pytorch3d from source (no pre-built wheels available for this platform)
+# Requires: PyTorch, CUDA toolkit, and C++ compiler (all already installed)
+# Use --no-build-isolation to use the existing environment with PyTorch
+RUN uv pip install --no-build-isolation "git+https://github.com/facebookresearch/pytorch3d.git"
+
+RUN uv pip install ikpy
+
+RUN uv pip install tenacity
+
+RUN uv pip install gradio_client
+
+
+
+
+
+# 按依赖顺序复制必要的文件，最大化利用 Docker 缓存
+
+# 复制 ManiSkill2_real2sim（需要先安装）
+COPY ManiSkill2_real2sim /workspace/ManiSkill2_real2sim
+# 安装 ManiSkill2_real2sim
+RUN cd ManiSkill2_real2sim && uv pip install -e .
+
+
+COPY setup.py /workspace/
+# 安装 SimplerEnv 当前目录
+RUN uv pip install -e .
+
+
+# 复制 graspnetAPI
+COPY graspnetAPI /workspace/graspnetAPI
+# 安装 graspnetAPI
+RUN cd graspnetAPI && uv pip install .
+
+
+# 复制 SoFar 并安装（包含 depth 模块）
+COPY SoFar /workspace/SoFar
+RUN cd SoFar && uv pip install -e .
+
+
+# 复制 MinkowskiEngine（需要 PyTorch，稍后安装）
+COPY MinkowskiEngine /workspace/MinkowskiEngine
+# 重新编译 MinkowskiEngine 以匹配新的 cu124 PyTorch（解决 ABI 不匹配问题）
+# RUN uv pip uninstall MinkowskiEngine -y || true
+RUN cd MinkowskiEngine && \
+    rm -rf build dist *.egg-info && \
+    python setup.py install --blas_include_dirs=/usr/include --blas=openblas 
+
+
+# 复制 GSNet（包含 pointnet2 和 knn）
+COPY GSNet/pointnet2 /workspace/GSNet/pointnet2
+COPY GSNet/knn /workspace/GSNet/knn
+# 重新编译 pointnet2 和 knn 以匹配新的 cu124 PyTorch（解决 ABI 不匹配问题）
+RUN cd GSNet/pointnet2 && \
+    rm -rf build dist *.egg-info && \
+    python setup.py install
+RUN cd GSNet/knn && \
+    rm -rf build dist *.egg-info && \
+    python setup.py install
+
+RUN uv pip install torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu124
+
+# 复制画线执行脚本和其他必要的 Python 文件
+COPY draw_line_execute.py /workspace/
+COPY startup.sh /workspace/
+RUN chmod +x /workspace/startup.sh
+COPY plan /workspace/plan
+
+# 设置默认命令
+CMD ["/bin/bash"]
+
