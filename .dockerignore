@@ -1,0 +1,49 @@
+# Git 相关
+.git
+.gitignore
+.gitattributes
+
+# Python 缓存（使用 ** 匹配所有子目录）
+**/__pycache__
+**/__pycache__/**
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.Python
+**/*.so
+**/*.egg
+**/*.egg-info
+**/dist
+**/build
+
+# 虚拟环境
+**/venv/
+**/env/
+**/ENV/
+
+# IDE
+**/.vscode/
+**/.idea/
+**/*.swp
+**/*.swo
+**/*~
+
+# 日志和临时文件
+**/*.log
+**/*.tmp
+**/.DS_Store
+
+# 结果目录（构建时不需要）
+**/results/
+**/output/
+**/*.mp4
+**/*.png
+**/*.jpg
+
+# Docker 相关
+.dockerignore
+
+# 其他不必要的文件
+**/*.bak
+**/*.backup
+

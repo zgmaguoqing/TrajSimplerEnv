@@ -1,0 +1,68 @@
+
+services:
+  simpler-env:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      cache_from:
+        - simpler-env:latest
+    image: simpler-env:latest
+    container_name: simpler-env-draw-line
+    network_mode: host
+    ipc: host        # 共享 IPC 命名空间，允许共享内存通信
+    pid: host        # 共享 PID 命名空间，便于调试和进程间通信
+    privileged: true
+    stdin_open: true
+    tty: true
+    
+    # GPU 支持
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    
+    # 环境变量
+    environment:
+      - DISPLAY=10.5.20.132:809 # ${DISPLAY} ${DISPLAY:-:0}
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - NVIDIA_VISIBLE_DEVICES=all
+      - __GLX_VENDOR_LIBRARY_NAME=nvidia
+      - PYTHONUNBUFFERED=1
+      # 代理设置（如果需要）
+      - http_proxy=http://10.5.20.132:18889 #${http_proxy:-}
+      - https_proxy=http://10.5.20.132:18889 #${https_proxy:-}
+      - HTTP_PROXY=http://10.5.20.132:18889 #${HTTP_PROXY:-}
+      - HTTPS_PROXY=http://10.5.20.132:18889 # ${HTTPS_PROXY:-}
+      # 脚本参数 - 默认使用 widowx 机器人
+      - ENV_NAME=${ENV_NAME:-PutCarrotOnPlateInScene-v0}
+      - SCENE_NAME=${SCENE_NAME:-bridge_table_1_v1}
+      - ROBOT=${ROBOT:-widowx}
+      - ROBOT_INIT_X=${ROBOT_INIT_X:-0.147}
+      - ROBOT_INIT_Y=${ROBOT_INIT_Y:-0.028}
+      - OBS_CAMERA_NAME=${OBS_CAMERA_NAME:-3rd_view_camera}
+      - MAX_EPISODE_STEPS=${MAX_EPISODE_STEPS:-200}
+      - LOGGING_DIR=${LOGGING_DIR:-/workspace/results}
+    
+    # 挂载卷
+    volumes:
+      # 挂载 X11 socket 用于显示
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # 挂载整个当前目录到容器内，方便实时修改环境配置
+      - .:/workspace
+      # 挂载 NVIDIA Vulkan ICD 文件（NVIDIA Container Toolkit 可能没有自动挂载）
+      - /usr/share/vulkan/icd.d/nvidia_icd.json:/usr/share/vulkan/icd.d/nvidia_icd.json:ro
+    
+    # 工作目录
+    working_dir: /workspace
+    
+    # 覆盖入口点，确保 command 被正确执行
+    entrypoint: []
+    
+    # 启动命令：执行启动脚本
+    command: >
+      sh -c "apt-get install -y ffmpeg && /workspace/startup.sh"
+
